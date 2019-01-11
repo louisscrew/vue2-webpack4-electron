@@ -1,5 +1,5 @@
 //装载并运行Snap App
-const SnapApp = require("./src/main/App.js");
-SnapApp.initialize();
+const MainApp = require("./src/main/App.js");
+MainApp.run();
 
 

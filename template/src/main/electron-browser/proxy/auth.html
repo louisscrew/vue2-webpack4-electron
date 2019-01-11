@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../../theme/index.css" />
+<link rel="stylesheet" href="../../theme/element-ui/index.css" />
+<style>
+html,
+body {
+	margin: 0;
+	padding: 0;
+	height: 100%;
+	width: 100%;
+	overflow: hidden;
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+body {
+	font-family: "Segoe WPC", "Segoe UI", "HelveticaNeue-Light", sans-serif, "Droid Sans Fallback";
+	font-size: 10pt;
+	background-color: #F3F3F3;
+}
+
+#main {
+	box-sizing: border-box;
+	padding: 10px;
+}
+
+h1 {
+	margin: 0;
+	padding: 10px 0;
+	font-size: 16px;
+	background-color: #555;
+	color: #f0f0f0;
+	text-align: center;
+}
+.main-panel{
+	padding: 10px;
+}
+.foot-panel{
+	text-align: right;
+}
+
+#message{
+	margin-bottom: 5px;
+    color: #ff0000;
+}
+
+.el-input__inner{
+	height: 30px;
+    line-height: 30px;
+    font-size: 12px;
+    padding: 0px 10px;
+}
+.el-form-item {
+    margin-bottom: 14px;
+}
+</style>
+</head>
+
+<body>
+	<div id="app">
+		<h1 id="title" v-text="title"></h1>
+		<section class="main-panel">
+			<p id="message" v-text="message"></p>
+			<section>
+				<p id="message"></p>
+				<el-form label-width="0px" :model="form" :rules="rules" ref="form">
+					<el-form-item prop="name">
+						<el-input v-model="form.name" placeholder="用户名" @keyup.native.enter="doSubmit"></el-input>
+					</el-form-item>
+					<el-form-item prop="password">
+						<el-input v-model="form.password" type="password" placeholder="密码" @keyup.native.enter="doSubmit"></el-input>
+					</el-form-item>
+				</el-form>
+				<div class="foot-panel">
+					<el-button size="mini" type="primary" @click="doSubmit">确定</el-button>
+					<el-button size="mini" @click="doHide">取消</el-button>
+				</div>
+			</section>
+		</section>
+	</div>
+</body>
+
+<script src="../../lib/vue/vue.js"></script>
+<script src="../../lib/element-ui/index.js"></script>
+<script>
+
+const {ipcRenderer} = require("electron");//渲染进程的ipc
+
+//绑定渲染进程事件
+ipcRenderer.on('ProxyAuthDialog-renderer-setInfo', function (event,args) {
+	mainVue.host = args.host;
+	mainVue.port = args.port;
+});
+
+var mainVue = new Vue({
+	el: '#app',
+	data: function() {
+		return { 
+			title: "需要代理身份验证" ,
+			host:"",
+			port:"",
+			rules: {
+				name: [
+					{ required: true, message: '请输入用户名', trigger: 'blur' }
+				],
+				password: [
+					{ required: true, message: '请输入密码', trigger: 'blur' }
+				]
+			},
+			form:{
+				name:"",
+				password:""
+			}
+		}
+	},
+	computed: {
+		// 计算属性的 getter
+		message: function () {
+			let r = "";
+			if(this.host.length > 0 || this.port.length > 0){
+				r = `代理${this.host}:${this.port}需要身份验证`;
+			}
+			return r;
+		}
+  	},
+	methods:{
+		doSubmit(){
+			let self = this;
+			self.$refs['form'].validate((valid) => {
+				if (valid) {
+					//提交事件
+					ipcRenderer.send('ProxyAuthDialog-main-login',{
+						username:self.form.name,
+						password:self.form.password
+					});
+					self.doHide();
+				}
+			});
+		},
+		doHide(){
+			ipcRenderer.send('ProxyAuthDialog-main-hide');
+		}
+	}
+})
+</script>
+</html>
